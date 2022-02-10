@@ -20,6 +20,48 @@ def mav(data):
     return np.mean(np.abs(data), axis=1)
 
 
+def mmav1(data):
+    """
+    :param data: EMG signal samples within rolling window
+    :return: Modified Mean Absolute Value 1 which is an extension of the MAV by applying a discrete
+    weighting window function.
+    """
+    llim = int(0.25 * data.shape[1])
+    hlim = int(0.75 * data.shape[1]) + 1
+    r1 = np.arange(0, llim)
+    r2 = np.arange(llim, hlim)
+    r3 = np.arange(hlim, data.shape[1])
+
+    return np.mean(np.concatenate((np.abs(np.take(data, r1, axis=1)) * 0.5, np.abs(np.take(data, r2, axis=1)),
+                                   np.abs(np.take(data, r3, axis=1)) * 0.5), axis=1), axis=1)
+
+
+def mmav2(data):
+    """
+    :param data: EMG signal samples within rolling window
+    :return: Modified Mean Absolute Value 2 which is similar to MMAV2 but a smoother continuous
+    weighting window function is used.
+    """
+    llim = int(0.25 * data.shape[1])
+    hlim = int(0.75 * data.shape[1]) + 1
+    r1 = np.arange(0, llim)
+    r2 = np.arange(llim, hlim)
+    r3 = np.arange(hlim, data.shape[1])
+    c1 = (4 * (r1 + 1) / data.shape[1])[np.newaxis, :, np.newaxis]
+    c2 = (4 * (r3 + 1 - data.shape[1]) / data.shape[1])[np.newaxis, :, np.newaxis]
+
+    return np.mean(np.concatenate((np.abs(np.take(data, r1, axis=1)) * c1, np.abs(np.take(data, r2, axis=1)),
+                                   np.abs(np.take(data, r3, axis=1)) * c2), axis=1), axis=1)
+
+
+def ssi(data):
+    """
+    :param data: EMG signal samples within rolling window
+    :return: Simple Square Integral which is the energy of the sEMG signal segment.
+    """
+    return np.sum(np.power(np.abs(data), 2), axis=1)
+
+
 def variance(data):
     """
     :param data: EMG signal samples within rolling window
@@ -95,10 +137,3 @@ def skewness(data):
         presence of extreme values in the EMG signal.
         """
     return sp.stats.skew(data, axis=1)
-
-
-
-
-
-
-
