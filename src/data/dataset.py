@@ -55,27 +55,26 @@ class EmgDataset:
 
         self.extract_features()
 
+    # TODO: Find a better to call feature extraction methods because this will get too long
     def extract_features(self):
         """
         Extract features from EMG data after rolling window.
         :return:
         """
-        n_channels = self.rolled_emg.shape[-1]
-        all_feats = np.zeros((self.rolled_emg.shape[0], n_channels * len(self.feature_set)))
-        for i, row in enumerate(self.rolled_emg):
-            feats = np.mean(row, axis=0)
-            if "Variance" in self.feature_set:
-                feats = np.hstack((feats, variance(row)))
-            if "SD" in self.feature_set:
-                feats = np.hstack((feats, np.std(row)))
-            if "Skewness" in self.feature_set:
-                feats = np.hstack((feats, skewness(row)))
-            if "Kurtosis" in self.feature_set:
-                feats = np.hstack((feats, kurtosis(row)))
-            if "RMS" in self.feature_set:
-                feats = np.hstack((feats, rms(row)))
-            all_feats[i] = feats
-        self.extracted_features = all_feats
+        feats = []
+        if "Mean" in self.feature_set:
+            feats.append(np.mean(self.rolled_emg, axis=1))
+        if "Variance" in self.feature_set:
+            feats.append(variance(self.rolled_emg))
+        if "SD" in self.feature_set:
+            feats.append(np.std(self.rolled_emg, axis=1))
+        if "Skewness" in self.feature_set:
+            feats.append(skewness(self.rolled_emg))
+        if "Kurtosis" in self.feature_set:
+            feats.append(kurtosis(self.rolled_emg))
+        if "RMS" in self.feature_set:
+            feats.append(rms(self.rolled_emg))
+        self.extracted_features = np.hstack(feats)
 
     def train_test_split(self, train_reps, test_reps):
         """
@@ -96,7 +95,6 @@ class EmgDataset:
         y = sliding_window_view(data, self.win_size, axis=0)[::self.win_stride, :]
         return y
 
-    # TODO: What if we want to update both, why prepare dataset twice?
     def update_features(self, new_features):
         """
         :param new_features: List containing new features
