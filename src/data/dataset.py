@@ -3,6 +3,17 @@ import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from extract_features import *
 
+# TODO: Use command pattern instead
+# TODO: Add supported features to config file
+supported_features = {"iemg": iemg, "mav": mav,
+                      "mmav1": mmav1, "mmav2": mmav2,
+                      "ssi": ssi, "rms": rms,
+                      "wl": wl, "zc": zc,
+                      "ssc": ssc, "wamp": wamp,
+                      "kurtosis": kurtosis,
+                      "skewness": skewness,
+                      "var": variance}
+
 
 class EmgDataset:
     def __init__(self, data_dir, win_size, win_stride, feature_set):
@@ -25,8 +36,9 @@ class EmgDataset:
 
     def read_signals(self, skip_cols=0):
         """
-        :param skip_cols: Columns to skip (from beginning), like timestamp
         Read signals from data directory.
+        :param skip_cols: Columns to skip (from beginning), like timestamp.
+        :return: None
         """
         label_col = -1
         for root, dirs, files in os.walk(self.data_dir):
@@ -40,6 +52,7 @@ class EmgDataset:
     def prepare_data(self):
         """
         Roll window on EMG data and labels, then extract features.
+        :return: None
         """
         n_channels = self.raw_emg[0].shape[-1]
         self.rolled_emg = np.empty((0, self.win_size, n_channels))
@@ -55,42 +68,38 @@ class EmgDataset:
 
         self.extract_features()
 
-    # TODO: Find a better to call feature extraction methods because this will get too long
     def extract_features(self):
         """
         Extract features from EMG data after rolling window.
-        :return:
+        :return: None
         """
-        feats = []
-        if "Mean" in self.feature_set:
-            feats.append(np.mean(self.rolled_emg, axis=1))
-        if "Variance" in self.feature_set:
-            feats.append(variance(self.rolled_emg))
-        if "SD" in self.feature_set:
-            feats.append(np.std(self.rolled_emg, axis=1))
-        if "Skewness" in self.feature_set:
-            feats.append(skewness(self.rolled_emg))
-        if "Kurtosis" in self.feature_set:
-            feats.append(kurtosis(self.rolled_emg))
-        if "RMS" in self.feature_set:
-            feats.append(rms(self.rolled_emg))
-        self.extracted_features = np.hstack(feats)
+        extracted_features = []
+        for feature in self.feature_set:
+            feat_func = supported_features.get(feature.lower(), None)
+            if feat_func:
+                extracted_features.append(feat_func(self.rolled_emg))
+            else:
+                print(f"Feature {feature} not supported yet")
+        if len(extracted_features):
+            self.extracted_features = np.hstack(extracted_features)
+        else:
+            print("No features have been extracted")
 
     def train_test_split(self, train_reps, test_reps):
         """
+        Split data to training and testing by repetition number
         :param train_reps: List containing training repetition numbers
         :param test_reps: List containing test repetition numbers
         :return: None
-        Split data to training and testing by repetition number
         """
         pass
 
     # TODO: Consider moving this to utils
     def roll_window(self, data):
         """
+        Roll window on data.
         :param data: 1-D numpy array containing data to roll window on
         :return: None
-        Roll window on data.
         """
         y = sliding_window_view(data, self.win_size, axis=0)[::self.win_stride, :]
         return y
@@ -106,10 +115,10 @@ class EmgDataset:
 
     def update_window(self, new_win_size, new_win_stride):
         """
+        Update window size and stride and prepare the data again.
         :param new_win_size: int containing new window size
         :param new_win_stride: int containing new window string
         :return: None
-        Update window size and stride and prepare the data again.
         """
         self.win_size = new_win_size
         self.win_stride = new_win_stride
