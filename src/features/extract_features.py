@@ -1,10 +1,11 @@
 import numpy as np
 import scipy as sp
+from scipy import signal
 
 
 def iemg(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Integrated EMG which is the summation of the absolute values of the EMG signal amplitude.
     It is used as an onset index to detect muscle activity.
     """
@@ -13,7 +14,7 @@ def iemg(data):
 
 def mav(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Mean Absolute Value which is the average of the absolute values of the EMG signal.
     It is used for the detection of muscle contraction levels.
     """
@@ -22,7 +23,7 @@ def mav(data):
 
 def mmav1(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Modified Mean Absolute Value 1 which is an extension of the MAV by applying a discrete
     weighting window function.
     """
@@ -38,7 +39,7 @@ def mmav1(data):
 
 def mmav2(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Modified Mean Absolute Value 2 which is similar to MMAV2 but a smoother continuous
     weighting window function is used.
     """
@@ -56,7 +57,7 @@ def mmav2(data):
 
 def ssi(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Simple Square Integral which is the energy of the sEMG signal segment.
     """
     return np.sum(np.power(np.abs(data), 2), axis=1)
@@ -64,7 +65,7 @@ def ssi(data):
 
 def variance(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Variance which is the average of the square of the signal's deviation from the mean.
     It uses the signals power as a feature.
     """
@@ -73,7 +74,7 @@ def variance(data):
 
 def rms(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Root Mean Square which is the standard deviation of the signal amplitude values.
     It is related to the constant force and non-fatiguing contraction of the muscle.
     """
@@ -82,7 +83,7 @@ def rms(data):
 
 def wl(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Waveform Length which is the cumulative length of the waveform over the time segment.
     It is related to the waveform amplitude, frequency and time.
     """
@@ -91,7 +92,7 @@ def wl(data):
 
 def zc(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Zero Crossing which is the number of times the signal values cross zero.
     It provides an approximation of the signal frequency. The threshold used is for reducing the effect of noise.
     """
@@ -100,7 +101,7 @@ def zc(data):
 
 def ssc(data, th=0):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :param th: Threshold used to reduce noise effects
     :return: Slope Sign Changes which is the number of changes between positive and negative slopes of the signal.
     It also provides information about the signal frequency. The threshold used is for reducing the effect of noise.
@@ -110,7 +111,7 @@ def ssc(data, th=0):
 
 def wamp(data, th=10):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :param th: Threshold used to reduce noise effects
     :return: Wilson's Amplitude which is the number of times that the difference between two consecutive signal segments
     passes a certain threshold, which is also used to reduce the effect of noise. WAMP is related to the firing of
@@ -123,7 +124,7 @@ def wamp(data, th=10):
 
 def kurtosis(data):
     """
-    :param data: EMG signal samples within rolling window
+    :param data: EMG signal samples within rolling window segment
     :return: Kurtosis which is a statistical measure that defines how the tails of a distribution differs
     from the tails of a normal distribution. It identifies the presence of extreme values in the EMG signal.
     """
@@ -132,8 +133,80 @@ def kurtosis(data):
 
 def skewness(data):
     """
-        :param data: EMG signal samples within rolling window
-        :return: Skewness which measures the lack of symmetry of a distribution. It also identifies the
-        presence of extreme values in the EMG signal.
-        """
+    :param data: EMG signal samples within rolling window segment
+    :return: Skewness which measures the lack of symmetry of a distribution. It also identifies the
+    presence of extreme values in the EMG signal.
+    """
     return sp.stats.skew(data, axis=1)
+
+
+def frequency_domain(data, fs, win_len, wind_stride):
+    """
+    :param data: EMG signal
+    :param fs: Sampling frequency of EMG signal
+    :param win_len: Number of EMG signal samples per STFT sliding window segment
+    :param wind_stride: Number of overlapping samples
+    :return: Power Spectrum and Frequency range of the EMG signal resulting from a short time fourier transform
+    """
+    frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False, noverlap=wind_stride, boundary=None, axis=0)
+    power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
+    return frequencies, power_spectrum
+
+
+def mnf(frequencies, power_spectrum):
+    """
+    :param frequencies: Frequency range of the power spectrum
+    :param power_spectrum: Power of the EMG signal at different frequencies
+    :return: Mean Frequency which is the average frequency of the power spectrum
+    """
+    return np.divide(np.sum(np.multiply(power_spectrum, np.repeat(frequencies, power_spectrum.shape[2]).reshape(power_spectrum.shape[1], power_spectrum.shape[2])), axis=1), np.sum(power_spectrum, axis=1))
+
+
+def mdf(frequencies, power_spectrum):
+    """
+    :param frequencies: Frequency range of the power spectrum
+    :param power_spectrum: Power of the EMG signal at different frequencies
+    :return: Median Frequency which is the frequency at which the spectrum is divided into two regions with equal power
+    """
+    med_freq = np.zeros((power_spectrum.shape[0], power_spectrum.shape[2]))
+    for indx, segment in enumerate(power_spectrum):
+        differences = []
+        for ind in range(frequencies.shape[0]):
+            diff = np.abs(np.subtract(np.sum(segment[:ind, :], axis=0), 0.5 * np.sum(segment, axis=0)))
+            differences.append(diff)
+
+        differences = np.array(differences)
+        med_freq[indx, :] = frequencies[differences.argmin(axis=0)]
+
+    return med_freq
+
+
+def mmnf(frequencies, power_spectrum):
+    """
+    :param frequencies: Frequency range of the power spectrum
+    :param power_spectrum: Power of the EMG signal at different frequencies
+    :return: Modified Mean Frequency which uses the amplitude spectrum instead of the power spectrum
+    """
+    amplitude_spectrum = np.sqrt(power_spectrum)
+    return np.divide(np.sum(np.multiply(amplitude_spectrum, np.repeat(frequencies, amplitude_spectrum.shape[2]).reshape(amplitude_spectrum.shape[1], amplitude_spectrum.shape[2])), axis=1), np.sum(amplitude_spectrum, axis=1))
+
+
+def mmdf(frequencies, power_spectrum):
+    """
+    :param frequencies: Frequency range of the power spectrum
+    :param power_spectrum: Power of the EMG signal at different frequencies
+    :return: Modified Median Frequency which uses the amplitude spectrum instead of the power spectrum. It
+    is the frequency at which the spectrum is divided into two regions with equal amplitude
+    """
+    amplitude_spectrum = np.sqrt(power_spectrum)
+    med_freq = np.zeros((amplitude_spectrum.shape[0], amplitude_spectrum.shape[2]))
+    for indx, segment in enumerate(amplitude_spectrum):
+        differences = []
+        for ind in range(frequencies.shape[0]):
+            diff = np.abs(np.subtract(np.sum(segment[:ind, :], axis=0), 0.5 * np.sum(segment, axis=0)))
+            differences.append(diff)
+
+        differences = np.array(differences)
+        med_freq[indx, :] = frequencies[differences.argmin(axis=0)]
+
+    return med_freq

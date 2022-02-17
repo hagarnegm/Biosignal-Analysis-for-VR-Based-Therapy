@@ -19,7 +19,7 @@ parser.add_argument("-d", "--device")
  
 args = parser.parse_args()
 
-device   = args.device
+device = args.device
 baudrate = args.baudrate                   
 output_path = args.output                
 
