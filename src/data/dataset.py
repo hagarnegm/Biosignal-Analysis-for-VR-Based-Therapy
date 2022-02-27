@@ -1,12 +1,12 @@
 import os
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from extract_features import *
+from src.features.extract_features import *
 
 # TODO: Use command pattern instead
 # TODO: Add supported features to config file
 supported_features = {"iemg": iemg, "mav": mav,
-                      "mmav1": mmav1, "mmav2": mmav2,
+                      "mmav1": mmav1, "mmav2": mmav2, "mavslp": mavslp,
                       "ssi": ssi, "rms": rms,
                       "wl": wl, "zc": zc,
                       "ssc": ssc, "wamp": wamp,

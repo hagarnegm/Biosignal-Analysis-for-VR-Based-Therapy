@@ -55,6 +55,14 @@ def mmav2(data):
                                    np.abs(np.take(data, r3, axis=1)) * c2), axis=1), axis=1)
 
 
+def mavslp(mavs):
+    """
+    :param mavs: Mean Absolute Value of each EMG segment
+    :return: The slope/difference of the MAV segments of the EMG signal.
+    """
+    return np.insert(np.diff(mavs, axis=0), 0, 0, axis=0)
+
+
 def ssi(data):
     """
     :param data: EMG signal samples within rolling window segment
@@ -90,23 +98,28 @@ def wl(data):
     return np.sum(np.abs(np.diff(data, axis=1)), axis=1)
 
 
-def zc(data):
+def zc(data, th=10):
     """
     :param data: EMG signal samples within rolling window segment
+    :param th: Threshold used to reduce noise effects
     :return: Zero Crossing which is the number of times the signal values cross zero.
     It provides an approximation of the signal frequency. The threshold used is for reducing the effect of noise.
     """
-    return np.count_nonzero(np.diff(np.sign(data), axis=1), axis=1)
+    return np.sum((np.diff(np.sign(data), axis=1) != 0) & (np.abs(np.diff(data, axis=1)) > th), axis=1)
 
 
-def ssc(data, th=0):
+def ssc(data, th=10):
     """
     :param data: EMG signal samples within rolling window segment
     :param th: Threshold used to reduce noise effects
     :return: Slope Sign Changes which is the number of changes between positive and negative slopes of the signal.
     It also provides information about the signal frequency. The threshold used is for reducing the effect of noise.
     """
-    return np.sum((-np.diff(data, prepend=1, axis=1)[:, 1:-1, :] * np.diff(data, axis=1)[:, 1:, :]) > th, axis=1)
+    pos_slope = (-np.diff(data, prepend=1, axis=1) > 0) & (np.diff(data, append=1, axis=1) > 0)
+    neg_slope = (-np.diff(data, prepend=1, axis=1) < 0) & (np.diff(data, append=1, axis=1) < 0)
+    denoised = (np.abs(-np.diff(data, prepend=1, axis=1)) > th) | (np.abs(np.diff(data, append=1, axis=1)) > th)
+    ssc_ = (pos_slope | neg_slope) & denoised
+    return np.sum(np.delete(ssc_, [0, -1], axis=1), axis=1)
 
 
 def wamp(data, th=10):
@@ -151,6 +164,11 @@ def frequency_domain(data, fs, win_len, wind_stride):
     frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False, noverlap=wind_stride, boundary=None, axis=0)
     power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
     return frequencies, power_spectrum
+
+
+def ar_coefficients(data, order):
+    ak, _ = AR_est_YW(data, order)
+    return ak
 
 
 def mnf(frequencies, power_spectrum):
