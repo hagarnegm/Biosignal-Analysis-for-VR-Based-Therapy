@@ -1,15 +1,19 @@
-# import os.path
+import os.path
 import time
 import serial
 import matplotlib
 import pandas as pd
+import tkinter as Tk
 import PySimpleGUI as sg
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from random import randint
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, FigureCanvasAgg
+import matplotlib.backends.backend_tkagg as tkagg
 
 
 def load_plot(file, canvas):
     signal = pd.read_csv(file, header=None)
-    fig = matplotlib.figure.Figure(figsize=(10, 5))
+    fig = Figure(figsize=(10, 5))
     fig.add_subplot(111).plot(signal[1])
     matplotlib.use("TkAgg")
 
@@ -30,22 +34,24 @@ layout = [
         sg.Text("Output File"),
         sg.In(size=(10, 1), enable_events=True, key="-OUTPUT-"),
         sg.Button("Start", size=(10, 1), key="-START-"),
-        sg.Button("Stop", size=(10, 1), key="-STOP-"),
-        sg.Button("Display", size=(10, 1), key="-DISPLAY-")
+        sg.Button("Stop", size=(10, 1), key="-STOP-")
+        # sg.Button("Display", size=(10, 1), key="-DISPLAY-")
     ],
     [sg.Text("Signal")],
     [
-        sg.Canvas(key="-CANVAS-")
+        sg.Canvas(size=(1000, 400), key="-CANVAS-")
     ]
 ]
 
-window = sg.Window("Data Logger", layout, size=(1000, 500))
+window = sg.Window("Data Logger", layout, size=(1000, 600))
 
 while True:
+
     event, values = window.read()
     state = ""
     if event == "Exit" or event == sg.WINDOW_CLOSED:
         break
+
     elif event == "-START-":
         state = "start"
         with serial.Serial(window["-DEVICE-"].get(), int(window["-BAUDRATE-"].get())) as serialPort, open(window["-OUTPUT-"].get(), 'w') as f:
@@ -55,7 +61,9 @@ while True:
                 curr_time = time.time() - now
                 f.write(f"{curr_time}, {line}")
                 f.flush()
+
     elif event == "-STOP-":
         state = "stop"
+
     elif event == "-DISPLAY-":
         load_plot(window["-OUTPUT-"].get(), window["-CANVAS-"].TKCanvas)

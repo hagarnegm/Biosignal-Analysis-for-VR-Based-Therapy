@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 from scipy import signal
+from nitime.algorithms.autoregressive import AR_est_YW
 
 
 def iemg(data):
@@ -161,7 +162,8 @@ def frequency_domain(data, fs, win_len, wind_stride):
     :param wind_stride: Number of overlapping samples
     :return: Power Spectrum and Frequency range of the EMG signal resulting from a short time fourier transform
     """
-    frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False, noverlap=wind_stride, boundary=None, axis=0)
+    frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False,
+                                                       noverlap=wind_stride, boundary=None, axis=0)
     power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
     return frequencies, power_spectrum
 
@@ -177,7 +179,8 @@ def mnf(frequencies, power_spectrum):
     :param power_spectrum: Power of the EMG signal at different frequencies
     :return: Mean Frequency which is the average frequency of the power spectrum
     """
-    return np.divide(np.sum(np.multiply(power_spectrum, np.repeat(frequencies, power_spectrum.shape[2]).reshape(power_spectrum.shape[1], power_spectrum.shape[2])), axis=1), np.sum(power_spectrum, axis=1))
+    return np.divide(np.sum(np.multiply(power_spectrum, np.repeat(frequencies, power_spectrum.shape[2]).reshape(
+        power_spectrum.shape[1], power_spectrum.shape[2])), axis=1), np.sum(power_spectrum, axis=1))
 
 
 def mdf(frequencies, power_spectrum):
@@ -206,7 +209,8 @@ def mmnf(frequencies, power_spectrum):
     :return: Modified Mean Frequency which uses the amplitude spectrum instead of the power spectrum
     """
     amplitude_spectrum = np.sqrt(power_spectrum)
-    return np.divide(np.sum(np.multiply(amplitude_spectrum, np.repeat(frequencies, amplitude_spectrum.shape[2]).reshape(amplitude_spectrum.shape[1], amplitude_spectrum.shape[2])), axis=1), np.sum(amplitude_spectrum, axis=1))
+    return np.divide(np.sum(np.multiply(amplitude_spectrum, np.repeat(frequencies, amplitude_spectrum.shape[2]).reshape(
+        amplitude_spectrum.shape[1], amplitude_spectrum.shape[2])), axis=1), np.sum(amplitude_spectrum, axis=1))
 
 
 def mmdf(frequencies, power_spectrum):
