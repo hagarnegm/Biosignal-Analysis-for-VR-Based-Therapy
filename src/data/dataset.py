@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from extract_features import *
+from src.features.extract_features import *
 
 # TODO: Use command pattern instead
 # TODO: Add supported features to config file
@@ -123,3 +123,4 @@ class EmgDataset:
         self.win_size = new_win_size
         self.win_stride = new_win_stride
         self.prepare_data()
+
