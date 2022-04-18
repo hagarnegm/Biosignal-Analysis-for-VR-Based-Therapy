@@ -8,7 +8,7 @@
 
  // TODO: Consider using a timer instead.
  
-int analog0;
+int analog0, analog1;
 void setup() {
   Serial.begin(115200);
 }
@@ -18,6 +18,9 @@ void loop() {
     if (micros() - last_conversion_time >= 1000) {
         last_conversion_time += 1000;
         analog0 = analogRead(A0);
-        Serial.println(analog0);
+        analog1 = analogRead(A1);
+        Serial.print(analog0);
+        Serial.print(",");
+        Serial.println(analog1);
     }
 }
