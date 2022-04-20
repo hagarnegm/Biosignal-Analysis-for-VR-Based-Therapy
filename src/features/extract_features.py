@@ -178,7 +178,8 @@ def hjorth_params(data):
     morbidity = np.sqrt(var_d1 / var_zero)
     complexity = np.sqrt(var_d2 / var_d1) / morbidity
 
-    return activity, morbidity, complexity
+    hjorth_params = np.concatenate((activity, morbidity, complexity), axis=1)
+    return hjorth_params
 
 
 def hjorth_activity(data):
