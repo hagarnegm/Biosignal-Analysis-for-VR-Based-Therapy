@@ -154,6 +154,62 @@ def skewness(data):
     return sp.stats.skew(data, axis=1)
 
 
+def ar_coefficients(data, order):
+    ar_coeff = []
+    for window in data:
+        window_coeff = []
+        for channel in range(len(window[0])):
+            ak, _ = AR_est_YW(window[:, channel], order)
+            window_coeff.extend(ak)
+        ar_coeff.append(window_coeff)
+
+    return np.array(ar_coeff)
+
+
+def hjorth_params(data):
+    first_deriv = np.diff(data, axis=1)
+    second_deriv = np.diff(data, 2, axis=1)
+
+    var_zero = np.mean(data ** 2, axis=1)
+    var_d1 = np.mean(first_deriv ** 2, axis=1)
+    var_d2 = np.mean(second_deriv ** 2, axis=1)
+
+    activity = var_zero
+    morbidity = np.sqrt(var_d1 / var_zero)
+    complexity = np.sqrt(var_d2 / var_d1) / morbidity
+
+    return activity, morbidity, complexity
+
+
+def hjorth_activity(data):
+    return np.mean(data ** 2, axis=1)
+
+
+def hjorth_morbidity(data):
+    first_deriv = np.diff(data, axis=1)
+
+    activity = np.mean(data ** 2, axis=1)
+    var_d1 = np.mean(first_deriv ** 2, axis=1)
+
+    morbidity = np.sqrt(var_d1 / activity)
+
+    return morbidity
+
+
+def hjorth_complexity(data):
+    first_deriv = np.diff(data, axis=1)
+    second_deriv = np.diff(data, 2, axis=1)
+
+    activity = np.mean(data ** 2, axis=1)
+    var_d1 = np.mean(first_deriv ** 2, axis=1)
+    var_d2 = np.mean(second_deriv ** 2, axis=1)
+
+    morbidity = np.sqrt(var_d1 / activity)
+    complexity = np.sqrt(var_d2 / var_d1) / morbidity
+
+    return complexity
+
+
 def frequency_domain(data, fs, win_len, wind_stride):
     """
     :param data: EMG signal
@@ -166,11 +222,6 @@ def frequency_domain(data, fs, win_len, wind_stride):
                                                        noverlap=wind_stride, boundary=None, axis=0)
     power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
     return frequencies, power_spectrum
-
-
-def ar_coefficients(data, order):
-    ak, _ = AR_est_YW(data, order)
-    return ak
 
 
 def mnf(frequencies, power_spectrum):
