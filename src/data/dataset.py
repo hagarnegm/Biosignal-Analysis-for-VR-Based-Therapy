@@ -1,5 +1,3 @@
-import os
-import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from src.features.extract_features import *
 from src.utils import *
@@ -64,7 +62,6 @@ class EmgDataset:
 
                 self.subject_name.append(subject_name)
                 self.repetition.append(repetition)
-
 
     def prepare_data(self):
         """

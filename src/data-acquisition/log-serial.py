@@ -19,13 +19,17 @@ parser.add_argument("-d", "--device")
  
 args = parser.parse_args()
 
-device   = args.device
+device = args.device
 baudrate = args.baudrate                   
 output_path = args.output                
 
+<<<<<<< HEAD
+with serial.Serial(device, baudrate) as serialPort, open(output_path,'w') as f:
+=======
 with serial.Serial(device,baudrate) as serialPort, open(output_path,'w', encoding="utf-8") as f:
+>>>>>>> main
     now = time.time()
-    while(1):
+    while 1:
         line = serialPort.readline().decode("utf-8", errors="ignore")
         curr_time = time.time() - now
         f.write(f"{curr_time}, {line}")          
