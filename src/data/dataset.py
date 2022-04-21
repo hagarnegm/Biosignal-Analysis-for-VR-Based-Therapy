@@ -14,14 +14,13 @@ supported_features = {"iemg": iemg, "mav": mav,
                       "skewness": skewness,
                       "var": variance}
 
-
 class EmgDataset:
     def __init__(self, data_dir, win_size, win_stride, feature_set):
         self.data_dir = data_dir
         self.feature_set = feature_set
         self.win_size = win_size
         self.win_stride = win_stride
-
+        
         self.raw_emg = []
         self.rolled_emg = np.empty((0, self.win_size, 2), dtype=np.float64)
 
@@ -54,9 +53,9 @@ class EmgDataset:
                 repetition = file_info["trial_num"]
 
                 data = pd.read_csv(file_path)
-
+                
                 self.raw_emg.append(data.iloc[:, skip_cols:label_col].values)
-
+                
                 labels = data.iloc[:, label_col].values
                 enc_labels = encode_labels(labels, ex_name)
                 self.labels.append(enc_labels)
@@ -76,7 +75,7 @@ class EmgDataset:
                                          for j in range(n_channels))
             trial_rolled_labels = self.roll_window(self.labels[i])[:, 0]
             trial_rolled_labels = np.expand_dims(trial_rolled_labels, 1)
-
+            
             trial_rolled_subject = [self.subject_name[i]] * trial_rolled_emg.shape[0]
             trial_rolled_repetition = [self.repetition[i]] * trial_rolled_emg.shape[0]
 
@@ -84,7 +83,7 @@ class EmgDataset:
             self.rolled_labels = np.vstack([self.rolled_labels, trial_rolled_labels])
             self.rolled_subject_name.extend(trial_rolled_subject)
             self.rolled_repetition.extend(trial_rolled_repetition)
-
+            
         self.extract_features()
 
     def extract_features(self):
