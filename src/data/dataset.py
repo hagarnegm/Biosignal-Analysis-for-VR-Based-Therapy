@@ -1,12 +1,12 @@
-import os
-import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from src.features.extract_features import *
+from src.utils import *
+import pandas as pd
 
 # TODO: Use command pattern instead
 # TODO: Add supported features to config file
 supported_features = {"iemg": iemg, "mav": mav,
-                      "mmav1": mmav1, "mmav2": mmav2, "mavslp": mavslp,
+                      "mmav1": mmav1, "mmav2": mmav2,
                       "ssi": ssi, "rms": rms,
                       "wl": wl, "zc": zc,
                       "ssc": ssc, "wamp": wamp,
@@ -21,20 +21,24 @@ class EmgDataset:
         self.feature_set = feature_set
         self.win_size = win_size
         self.win_stride = win_stride
-        self.raw_emg = []
-        self.rolled_emg = None
-        self.labels = []
-        self.rolled_labels = None
-        self.reps = []
-        self.rolled_reps = None
-        self.extracted_features = None
-        # file_names are just for debugging purposes, will be removed in the future
-        self.file_names = []
 
+        self.raw_emg = []
+        self.rolled_emg = np.empty((0, self.win_size, 2), dtype=np.float64)
+
+        self.subject_name = []
+        self.rolled_subject_name = []
+        self.repetition = []
+        self.rolled_repetition = []
+
+        self.labels = []
+        self.rolled_labels = np.empty((0, 1), dtype=np.int32)
+
+        self.reps = []
+        self.extracted_features = None
         self.read_signals()
         self.prepare_data()
 
-    def read_signals(self, skip_cols=0):
+    def read_signals(self, skip_cols=1):
         """
         Read signals from data directory.
         :param skip_cols: Columns to skip (from beginning), like timestamp.
@@ -44,10 +48,21 @@ class EmgDataset:
         for root, dirs, files in os.walk(self.data_dir):
             for f in files:
                 file_path = os.path.join(root, f)
-                data = np.genfromtxt(file_path, delimiter=',')[:, skip_cols:]
-                self.raw_emg.append(data[:, :label_col])
-                self.labels.append(data[:, label_col])
-                self.file_names.append(file_path.split("/")[-1])
+                file_info = extract_ex_info(file_path)
+                ex_name = file_info["ex_name"]
+                subject_name = file_info["subject_name"]
+                repetition = file_info["trial_num"]
+
+                data = pd.read_csv(file_path)
+
+                self.raw_emg.append(data.iloc[:, skip_cols:label_col].values)
+
+                labels = data.iloc[:, label_col].values
+                enc_labels = encode_labels(labels, ex_name)
+                self.labels.append(enc_labels)
+
+                self.subject_name.append(subject_name)
+                self.repetition.append(repetition)
 
     def prepare_data(self):
         """
@@ -55,16 +70,20 @@ class EmgDataset:
         :return: None
         """
         n_channels = self.raw_emg[0].shape[-1]
-        self.rolled_emg = np.empty((0, self.win_size, n_channels))
-        self.rolled_labels = np.empty((0, 1))
 
         for i in range(len(self.raw_emg)):
             trial_rolled_emg = np.dstack(self.roll_window(self.raw_emg[i][:, j])
                                          for j in range(n_channels))
             trial_rolled_labels = self.roll_window(self.labels[i])[:, 0]
-            trial_rolled_labels = np.reshape(trial_rolled_labels, (-1, 1))
+            trial_rolled_labels = np.expand_dims(trial_rolled_labels, 1)
+
+            trial_rolled_subject = [self.subject_name[i]] * trial_rolled_emg.shape[0]
+            trial_rolled_repetition = [self.repetition[i]] * trial_rolled_emg.shape[0]
+
             self.rolled_emg = np.vstack([self.rolled_emg, trial_rolled_emg])
             self.rolled_labels = np.vstack([self.rolled_labels, trial_rolled_labels])
+            self.rolled_subject_name.extend(trial_rolled_subject)
+            self.rolled_repetition.extend(trial_rolled_repetition)
 
         self.extract_features()
 
@@ -99,16 +118,16 @@ class EmgDataset:
         """
         Roll window on data.
         :param data: 1-D numpy array containing data to roll window on
-        :return: None
+        :return: numpy array after rolling window
         """
         y = sliding_window_view(data, self.win_size, axis=0)[::self.win_stride, :]
         return y
 
     def update_features(self, new_features):
         """
+        Update features and prepare the data again.
         :param new_features: List containing new features
         :return: None
-        Update features and prepare the data again.
         """
         self.feature_set = new_features
         self.prepare_data()
