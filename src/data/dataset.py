@@ -12,14 +12,19 @@ supported_features = {"iemg": iemg, "mav": mav,
                       "ssc": ssc, "wamp": wamp,
                       "kurtosis": kurtosis,
                       "skewness": skewness,
-                      "var": variance}
+                      "var": variance,
+                      "ar_coeff": ar_coefficients,
+                      "hjorth": hjorth_params,
+                      "mnf": mnf, "mdf": mdf, "mmnf": mmnf, "mmdf": mmdf}
+
 
 class EmgDataset:
-    def __init__(self, data_dir, win_size, win_stride, feature_set):
+    def __init__(self, data_dir, win_size, win_stride, feature_set, is_td):
         self.data_dir = data_dir
         self.feature_set = feature_set
         self.win_size = win_size
         self.win_stride = win_stride
+        self.is_td = is_td
         
         self.raw_emg = []
         self.rolled_emg = np.empty((0, self.win_size, 2), dtype=np.float64)
@@ -37,7 +42,7 @@ class EmgDataset:
         self.read_signals()
         self.prepare_data()
 
-    def read_signals(self, skip_cols=1):
+    def read_signals(self, skip_cols=0):
         """
         Read signals from data directory.
         :param skip_cols: Columns to skip (from beginning), like timestamp.
@@ -69,7 +74,6 @@ class EmgDataset:
         :return: None
         """
         n_channels = self.raw_emg[0].shape[-1]
-
         for i in range(len(self.raw_emg)):
             trial_rolled_emg = np.dstack(self.roll_window(self.raw_emg[i][:, j])
                                          for j in range(n_channels))
@@ -83,10 +87,13 @@ class EmgDataset:
             self.rolled_labels = np.vstack([self.rolled_labels, trial_rolled_labels])
             self.rolled_subject_name.extend(trial_rolled_subject)
             self.rolled_repetition.extend(trial_rolled_repetition)
-            
-        self.extract_features()
 
-    def extract_features(self):
+        if self.is_td:
+            self.extract_td_features()
+        else:
+            self.extract_fd_features()
+
+    def extract_td_features(self):
         """
         Extract features from EMG data after rolling window.
         :return: None
@@ -96,6 +103,25 @@ class EmgDataset:
             feat_func = supported_features.get(feature.lower(), None)
             if feat_func:
                 extracted_features.append(feat_func(self.rolled_emg))
+            else:
+                print(f"Feature {feature} not supported yet")
+        if len(extracted_features):
+            self.extracted_features = np.hstack(extracted_features)
+        else:
+            print("No features have been extracted")
+
+    def extract_fd_features(self):
+        """
+        Extract features from EMG data after rolling window.
+        :return: None
+        """
+        frequencies, power_spectrum = frequency_domain(np.vstack(self.raw_emg), self.win_size, self.win_stride)
+
+        extracted_features = []
+        for feature in self.feature_set:
+            feat_func = supported_features.get(feature.lower(), None)
+            if feat_func:
+                extracted_features.append(feat_func(frequencies, power_spectrum))
             else:
                 print(f"Feature {feature} not supported yet")
         if len(extracted_features):

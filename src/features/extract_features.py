@@ -154,7 +154,7 @@ def skewness(data):
     return sp.stats.skew(data, axis=1)
 
 
-def ar_coefficients(data, order):
+def ar_coefficients(data, order=11):
     ar_coeff = []
     for window in data:
         window_coeff = []
@@ -211,17 +211,18 @@ def hjorth_complexity(data):
     return complexity
 
 
-def frequency_domain(data, fs, win_len, wind_stride):
+def frequency_domain(data, win_len, win_stride, fs=980):
     """
     :param data: EMG signal
     :param fs: Sampling frequency of EMG signal
     :param win_len: Number of EMG signal samples per STFT sliding window segment
-    :param wind_stride: Number of overlapping samples
+    :param win_stride: Number of overlapping samples
     :return: Power Spectrum and Frequency range of the EMG signal resulting from a short time fourier transform
     """
     frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False,
-                                                       noverlap=wind_stride, boundary=None, axis=0)
+                                                       noverlap=win_stride, boundary=None, axis=0)
     power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
+    print(power_spectrum.shape)
     return frequencies, power_spectrum
 
 
