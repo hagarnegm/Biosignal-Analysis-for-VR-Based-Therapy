@@ -129,7 +129,8 @@ class EmgDataset:
         :return: None
         """
         self.feature_set = new_features
-        self.prepare_data()
+        self.extracted_features = None
+        self.extract_features()
 
     def update_window(self, new_win_size, new_win_stride):
         """
