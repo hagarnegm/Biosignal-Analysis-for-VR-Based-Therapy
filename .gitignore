@@ -3,3 +3,4 @@ venv/
 *.csv
 .ipynb_checkpoints
 experiments
+src.egg-info
