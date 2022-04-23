@@ -104,8 +104,13 @@ class EmgDataset:
                 if self.is_td:
                     extracted_features.append(feat_func(self.rolled_emg))
                 else:
-                    frequencies, power_spectrum = frequency_domain(self.rolled_emg)
-                    extracted_features.append(feat_func(frequencies, power_spectrum))
+                    power_spectrums = []
+                    for sig in self.raw_emg:
+                        frequencies, power_spectrum = frequency_domain(sig, self.win_size, (self.win_size - self.win_stride))
+                        power_spectrums.append(power_spectrum)
+
+                    power_spectrums = np.vstack(power_spectrums)
+                    extracted_features.append(feat_func(frequencies, power_spectrums))
             else:
                 print(f"Feature {feature} not supported yet")
         if len(extracted_features):

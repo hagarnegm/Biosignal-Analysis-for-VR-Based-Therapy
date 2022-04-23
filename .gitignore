@@ -5,5 +5,5 @@ venv/
 experiments
 *.zip
 *.mat
-src.egg-info/
-__pycache__/
+/__pycache__/
+/src.egg-info/
