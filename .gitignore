@@ -3,3 +3,7 @@ venv/
 *.csv
 .ipynb_checkpoints
 experiments
+*.zip
+*.mat
+src.egg-info/
+__pycache__/

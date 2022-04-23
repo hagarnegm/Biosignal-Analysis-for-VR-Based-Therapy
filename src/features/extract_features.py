@@ -211,18 +211,29 @@ def hjorth_complexity(data):
     return complexity
 
 
-def frequency_domain(data, win_len, win_stride, fs=980):
+# def frequency_domain(data, win_len, win_stride, fs=980):
+#     """
+#     :param data: EMG signal
+#     :param fs: Sampling frequency of EMG signal
+#     :param win_len: Number of EMG signal samples per STFT sliding window segment
+#     :param win_stride: Number of overlapping samples
+#     :return: Power Spectrum and Frequency range of the EMG signal resulting from a short time fourier transform
+#     """
+#     frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False,
+#                                                        noverlap=win_stride, boundary=None, axis=0)
+#     power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
+#     return frequencies, power_spectrum
+
+
+def frequency_domain(data, fs=980):
     """
     :param data: EMG signal
     :param fs: Sampling frequency of EMG signal
-    :param win_len: Number of EMG signal samples per STFT sliding window segment
-    :param win_stride: Number of overlapping samples
     :return: Power Spectrum and Frequency range of the EMG signal resulting from a short time fourier transform
     """
-    frequencies, t, fourier_coefficients = signal.stft(data, fs=fs, window='cosine', nperseg=win_len, padded=False,
-                                                       noverlap=win_stride, boundary=None, axis=0)
-    power_spectrum = np.square(np.abs(np.transpose(fourier_coefficients, (2, 0, 1))))
-    print(power_spectrum.shape)
+    fourier_coefficients = sp.fft.fft(data, axis=1)
+    frequencies = np.linspace(0, fs/2, fourier_coefficients.shape[1])
+    power_spectrum = np.square(np.abs(fourier_coefficients))
     return frequencies, power_spectrum
 
 

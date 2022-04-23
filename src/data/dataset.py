@@ -1,3 +1,4 @@
+import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from src.features.extract_features import *
 from src.utils import *
@@ -77,6 +78,7 @@ class EmgDataset:
         for i in range(len(self.raw_emg)):
             trial_rolled_emg = np.dstack(self.roll_window(self.raw_emg[i][:, j])
                                          for j in range(n_channels))
+
             trial_rolled_labels = self.roll_window(self.labels[i])[:, 0]
             trial_rolled_labels = np.expand_dims(trial_rolled_labels, 1)
             
@@ -88,12 +90,9 @@ class EmgDataset:
             self.rolled_subject_name.extend(trial_rolled_subject)
             self.rolled_repetition.extend(trial_rolled_repetition)
 
-        if self.is_td:
-            self.extract_td_features()
-        else:
-            self.extract_fd_features()
+        self.extract_features()
 
-    def extract_td_features(self):
+    def extract_features(self):
         """
         Extract features from EMG data after rolling window.
         :return: None
@@ -102,26 +101,11 @@ class EmgDataset:
         for feature in self.feature_set:
             feat_func = supported_features.get(feature.lower(), None)
             if feat_func:
-                extracted_features.append(feat_func(self.rolled_emg))
-            else:
-                print(f"Feature {feature} not supported yet")
-        if len(extracted_features):
-            self.extracted_features = np.hstack(extracted_features)
-        else:
-            print("No features have been extracted")
-
-    def extract_fd_features(self):
-        """
-        Extract features from EMG data after rolling window.
-        :return: None
-        """
-        frequencies, power_spectrum = frequency_domain(np.vstack(self.raw_emg), self.win_size, self.win_stride)
-
-        extracted_features = []
-        for feature in self.feature_set:
-            feat_func = supported_features.get(feature.lower(), None)
-            if feat_func:
-                extracted_features.append(feat_func(frequencies, power_spectrum))
+                if self.is_td:
+                    extracted_features.append(feat_func(self.rolled_emg))
+                else:
+                    frequencies, power_spectrum = frequency_domain(self.rolled_emg)
+                    extracted_features.append(feat_func(frequencies, power_spectrum))
             else:
                 print(f"Feature {feature} not supported yet")
         if len(extracted_features):
