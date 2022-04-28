@@ -546,5 +546,9 @@ PrefabInstance:
       propertyPath: m_Name
       value: twoHand_highpoly
       objectReference: {fileID: 0}
+    - target: {fileID: 2217739047469690361, guid: df1104654d0644951b70609328d46181, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: df1104654d0644951b70609328d46181, type: 3}

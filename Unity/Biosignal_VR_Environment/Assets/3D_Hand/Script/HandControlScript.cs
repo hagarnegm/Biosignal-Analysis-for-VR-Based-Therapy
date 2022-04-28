@@ -34,12 +34,18 @@ namespace Sample {
         Thread newThread;
         bool running;
         int received;
+        int previous = 0;
+        string[] arr_gest_loop = new string[5];
+        int index = 0;
 
         void Start()
         {
+            // sockets threads
             ThreadStart ts = new ThreadStart(GetInfo);
             newThread = new Thread(ts);
             newThread.Start();
+
+            // Hand position
             _L_InitialPos = _Hand_L.transform.position;
             _R_InitialPos = _Hand_R.transform.position;
             _L_InitialRot = _Hand_L.transform.rotation;
@@ -49,12 +55,19 @@ namespace Sample {
             _TargetPos = GameObject.Find("Target").transform.position + new Vector3(0, 0, -0.5f);
             _TargetRot = GameObject.Find("Target").transform.rotation;
             _GroundHight = GameObject.Find("Ground").transform.position.y;
+
         }
 
         void Update()
         {
-            print("Gestures received is:   " + received);
-            TakeAction(received);
+            //print("Gestures received is:   " + received);
+
+            if (previous != received)
+            {
+                TakeAction(received);
+                previous = received;
+            }
+
             #region comment
             //if (!_Wait)
             //{
@@ -238,9 +251,10 @@ namespace Sample {
 
         private void TakeAction(int label)
         {
+
             if (label == 0)
             {
-
+                IDLE();
             }
             else if (label == 1)
             {
@@ -256,7 +270,7 @@ namespace Sample {
             }
             else if (label == 4)
             {
-                SHRUG();
+                STOP();
             }
             else if (label == 5)
             {
@@ -274,31 +288,59 @@ namespace Sample {
             int dataByte = nwStream.Read(buffer, 0, client.ReceiveBufferSize); // Reading data in Bytes
             string dataString = Encoding.UTF8.GetString(buffer, 0, dataByte); // Converting data to string
 
-            if (dataString == "0")
+            // comparing each five gestures and send only the most appeared one
+            arr_gest_loop[index] = dataString;
+            index++;
+            if (index == 5)
             {
+                Dictionary<string, int> dic_count = new Dictionary<string, int>();
+                for (int i = 0; i < arr_gest_loop.Length; i++)
+                {
+                    if (dic_count.ContainsKey(arr_gest_loop[i]))
+                    {
+                        dic_count[arr_gest_loop[i]] = dic_count[arr_gest_loop[i]] + 1;
+                    }
+                    else
+                    {
+                        dic_count.Add(arr_gest_loop[i], 1);
+                    }
+                }
+                int x = 0;
+                foreach (var item in dic_count)
+                {
+                    if (item.Value > x)
+                    {
+                        x = item.Value;
+                        dataString = item.Key;
+                    }
+                }
+                if (dataString == "0")
+                {
+                    received = 0;
+                }
+                else if (dataString == "1")
+                {
+                    received = 1;
+                }
+                else if (dataString == "2")
+                {
+                    received = 2;
+                }
+                else if (dataString == "3")
+                {
+                    received = 3;
+                }
+                else if (dataString == "4")
+                {
+                    received = 4;
+                }
+                else if (dataString == "5")
+                {
 
-            }
-            else if (dataString == "1")
-            {
-                received = 1;
-            }
-            else if (dataString == "2")
-            {
-                received = 2;
-            }
-            else if (dataString == "3")
-            {
-                received = 3;
-            }
-            else if (dataString == "4")
-            {
-                received = 4;
-            }
-            else if (dataString == "5")
-            {
-                
-            }
+                }
 
+                index = 0; 
+            }
         }
 
         // Receive data from sockets
@@ -319,6 +361,15 @@ namespace Sample {
         #endregion
 
         #region play_Gestures
+        //_____________________________________________________________________ Play idle
+        private void IDLE()
+        {
+            INITIALIZE_COROUTINE(_Hand_L);
+            INITIALIZE_COROUTINE(_Hand_R);
+            _Cor_L = StartCoroutine(PlayAnimation(_Hand_L, "idle"));
+            _Cor_R = StartCoroutine(PlayAnimation(_Hand_R, "idle"));
+
+        }
         //_____________________________________________________________________ Play Damage
         private void DAMAGE()
         {
@@ -703,8 +754,8 @@ namespace Sample {
                     yield break;
                 }
                 t += 1 * Time.deltaTime;
-                obj.transform.position = Vector3.Lerp(obj_pos, targetPos, t);
-                obj.transform.rotation = Quaternion.Lerp(obj_rot, targetRot, t);
+                //obj.transform.position = Vector3.Lerp(obj_pos, targetPos, t);
+                //obj.transform.rotation = Quaternion.Lerp(obj_rot, targetRot, t);
                 yield return null;
             }
         }
@@ -752,8 +803,8 @@ namespace Sample {
                     yield break;
                 }
                 t += 1 * Time.deltaTime;
-                obj.transform.position = Vector3.Lerp(obj_pos, targetPos, t);
-                obj.transform.rotation = Quaternion.Lerp(obj_rot, targetRot, t);
+                //obj.transform.position = Vector3.Lerp(obj_pos, targetPos, t);
+                //obj.transform.rotation = Quaternion.Lerp(obj_rot, targetRot, t);
                 yield return null;
             }
         }
@@ -765,22 +816,22 @@ namespace Sample {
             Vector3 end_pos = Vector3.zero;
             Quaternion end_rot = Quaternion.Euler(0, 0, 0);
 
-            if (obj.name.Substring(5, 1) == "L")
-            {
-                obj_pos = _Hand_L.transform.position;
-                obj_rot = _Hand_L.transform.rotation;
-                end_pos = _L_InitialPos;
-                end_rot = _L_InitialRot;
-                _L_anim.CrossFade("idle", 0.2f, 0, 0.0f);
-            }
-            else if (obj.name.Substring(5, 1) == "R")
-            {
-                obj_pos = _Hand_R.transform.position;
-                obj_rot = _Hand_R.transform.rotation;
-                end_pos = _R_InitialPos;
-                end_rot = _R_InitialRot;
-                _R_anim.CrossFade("idle", 0.2f, 0, 0.0f);
-            }
+            //if (obj.name.Substring(5, 1) == "L")
+            //{
+            //    obj_pos = _Hand_L.transform.position;
+            //    obj_rot = _Hand_L.transform.rotation;
+            //    end_pos = _L_InitialPos;
+            //    end_rot = _L_InitialRot;
+            //    _L_anim.CrossFade("idle", 0.2f, 0, 0.0f);
+            //}
+            //else if (obj.name.Substring(5, 1) == "R")
+            //{
+            //    obj_pos = _Hand_R.transform.position;
+            //    obj_rot = _Hand_R.transform.rotation;
+            //    end_pos = _R_InitialPos;
+            //    end_rot = _R_InitialRot;
+            //    _R_anim.CrossFade("idle", 0.2f, 0, 0.0f);
+            //}
 
             float t = 0;
             while (true)
@@ -792,8 +843,8 @@ namespace Sample {
                 }
                 t += 1 * Time.deltaTime;
 
-                obj.transform.position = Vector3.Lerp(obj_pos, end_pos, t);
-                obj.transform.rotation = Quaternion.Lerp(obj_rot, end_rot, t);
+                //obj.transform.position = Vector3.Lerp(obj_pos, end_pos, t);
+                //obj.transform.rotation = Quaternion.Lerp(obj_rot, end_rot, t);
 
                 yield return null;
             }
@@ -811,18 +862,18 @@ namespace Sample {
                 _R_anim.CrossFade(state_name, 0.2f, 0, 0.0f);
             }
             yield return new WaitForSeconds(1.5f);
-            if (obj.name.Substring(5, 1) == "L")
-            {
-                _L_anim.CrossFade("idle", 0.2f, 0, 0.0f);
-                _Cor_L = null;
-                _Cor_L = StartCoroutine(InitializePos(obj));
-            }
-            else if (obj.name.Substring(5, 1) == "R")
-            {
-                _R_anim.CrossFade("idle", 0.2f, 0, 0.0f);
-                _Cor_R = null;
-                _Cor_R = StartCoroutine(InitializePos(obj));
-            }
+            //if (obj.name.Substring(5, 1) == "L")
+            //{
+            //    _L_anim.CrossFade("idle", 0.2f, 0, 0.0f);
+            //    _Cor_L = null;
+            //    _Cor_L = StartCoroutine(InitializePos(obj));
+            //}
+            //else if (obj.name.Substring(5, 1) == "R")
+            //{
+            //    _R_anim.CrossFade("idle", 0.2f, 0, 0.0f);
+            //    _Cor_R = null;
+            //    _Cor_R = StartCoroutine(InitializePos(obj));
+            //}
         }
         //_____________________________________________________________________ Initialize Coroutine
         private void INITIALIZE_COROUTINE(GameObject obj)
