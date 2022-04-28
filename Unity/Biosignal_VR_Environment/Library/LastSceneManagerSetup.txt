@@ -1,0 +1,5 @@
+sceneSetups:
+- path: Assets/3D_Hand/Scene/Demo.unity
+  isLoaded: 1
+  isActive: 1
+  isSubScene: 0
