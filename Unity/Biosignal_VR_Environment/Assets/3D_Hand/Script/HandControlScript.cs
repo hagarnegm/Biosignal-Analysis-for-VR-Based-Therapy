@@ -248,7 +248,7 @@ namespace Sample {
         }
 
         #region sockets
-
+        
         private void TakeAction(int label)
         {
 
@@ -492,9 +492,9 @@ namespace Sample {
         //_____________________________________________________________________ Play Stop
         private void STOP()
         {
-            INITIALIZE_COROUTINE(_Hand_L);
+            //INITIALIZE_COROUTINE(_Hand_L);
             INITIALIZE_COROUTINE(_Hand_R);
-            _Cor_L = StartCoroutine(PlayAnimation(_Hand_L, "stop"));
+            //_Cor_L = StartCoroutine(PlayAnimation(_Hand_L, "stop"));
             _Cor_R = StartCoroutine(PlayAnimation(_Hand_R, "stop"));
         }
         //_____________________________________________________________________ Play Thumbs up
