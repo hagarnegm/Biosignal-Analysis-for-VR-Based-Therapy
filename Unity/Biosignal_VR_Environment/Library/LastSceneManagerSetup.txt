@@ -1,0 +1,9 @@
+sceneSetups:
+- path: Assets/3D_Hand/Scene/Demo.unity
+  isLoaded: 1
+  isActive: 1
+  isSubScene: 0
+- path: Assets/FurnishedCabin/Scenes/Demo.unity
+  isLoaded: 1
+  isActive: 0
+  isSubScene: 0
