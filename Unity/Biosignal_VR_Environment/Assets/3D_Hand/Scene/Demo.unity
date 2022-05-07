@@ -504,7 +504,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 35898974419587033, guid: df1104654d0644951b70609328d46181, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.375
+      value: 1.487
       objectReference: {fileID: 0}
     - target: {fileID: 35898974419587033, guid: df1104654d0644951b70609328d46181, type: 3}
       propertyPath: m_LocalPosition.y
@@ -545,6 +545,10 @@ PrefabInstance:
     - target: {fileID: 35898974419587035, guid: df1104654d0644951b70609328d46181, type: 3}
       propertyPath: m_Name
       value: twoHand_highpoly
+      objectReference: {fileID: 0}
+    - target: {fileID: 2090909684245573975, guid: df1104654d0644951b70609328d46181, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.32
       objectReference: {fileID: 0}
     - target: {fileID: 2217739047469690361, guid: df1104654d0644951b70609328d46181, type: 3}
       propertyPath: m_ApplyRootMotion
